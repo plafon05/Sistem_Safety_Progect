@@ -51,6 +51,7 @@ class SecuritySystemApp:
             case "personal manager":
                 tk.Button(self.main_frame, text="Удалить пользователя", command=self.delete_user).pack(pady=5)
                 tk.Button(self.main_frame, text="Добавить пользователя", command=self.add_user).pack(pady=5)
+                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
 
             case "admin":
                 tk.Button(self.main_frame, text="Изменить пороговые значения", command=self.change_thresholds).pack(pady=5)
@@ -106,6 +107,7 @@ class SecuritySystemApp:
         if data:
             sensor_window = tk.Toplevel(self.root)
             sensor_window.title("Данные с датчиков")
+            sensor_window.geometry("800x600+200+200")  # Задание размеров и положения окна
 
             canvas = tk.Canvas(sensor_window)
             scrollbar_y = tk.Scrollbar(sensor_window, orient="vertical", command=canvas.yview)
@@ -114,9 +116,7 @@ class SecuritySystemApp:
 
             scrollable_frame.bind(
                 "<Configure>",
-                lambda e: canvas.configure(
-                    scrollregion=canvas.bbox("all")
-                )
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
             )
 
             canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -128,7 +128,10 @@ class SecuritySystemApp:
 
             for row in data:
                 timestamp, temperature, humidity, motion, door = row
-                tk.Label(scrollable_frame, text=f"{timestamp} - Температура={temperature}C, Влажность={humidity}%, Движение={bool(motion)}, Дверь={bool(door)}").pack(anchor="w")
+                tk.Label(
+                    scrollable_frame,
+                    text=f"{timestamp} - Температура={temperature}C, Влажность={humidity}%, Движение={bool(motion)}, Дверь={bool(door)}"
+                ).pack(anchor="w")
         else:
             messagebox.showinfo("Данные с датчиков", "Нет данных для отображения.")
 

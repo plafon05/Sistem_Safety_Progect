@@ -70,19 +70,21 @@ class Database:
 
     def create_tables(self):
         self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL
-        )""")
+           CREATE TABLE IF NOT EXISTS users (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               username TEXT NOT NULL,
+               password TEXT NOT NULL,
+               role TEXT NOT NULL,
+               UNIQUE(username, role)
+           )""")
         self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sensor_data (
-            timestamp TEXT,
-            temperature REAL,
-            humidity REAL,
-            motion_detected INTEGER,
-            door_opened INTEGER
-        )""")
+           CREATE TABLE IF NOT EXISTS sensor_data (
+               timestamp TEXT,
+               temperature REAL,
+               humidity REAL,
+               motion_detected INTEGER,
+               door_opened INTEGER
+           )""")
         self.connection.commit()
         self.ensure_admin_exists()
 
@@ -92,12 +94,25 @@ class Database:
         if not self.cursor.fetchone():
             self.add_user("danila.zheltov", "123", "admin")
 
-    def add_user(self, username, password, role):
-        self.cursor.execute("INSERT INTO users VALUES (?, ?, ?)", (username, password, role))
-        self.connection.commit()
+    def ensure_personal_manager_exists(self):
+        """Создаёт учётную запись менеджера по персоналу, если она не существует."""
+        self.cursor.execute("SELECT * FROM users WHERE username = ?", ("danila.zheltov",))
+        if not self.cursor.fetchone():
+            self.add_user("danila.zheltov", "1234", "personal manager")
 
-    def delete_user(self, username):
-        self.cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+    def add_user(self, username, password, role):
+        try:
+            self.cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                                (username, password, role))
+            self.connection.commit()
+        except sqlite3.IntegrityError:
+            print(f"Пользователь с именем '{username}' и ролью '{role}' уже существует.")
+
+    def delete_user(self, username, role=None):
+        if role:
+            self.cursor.execute("DELETE FROM users WHERE username = ? AND role = ?", (username, role))
+        else:
+            self.cursor.execute("DELETE FROM users WHERE username = ?", (username,))
         self.connection.commit()
 
     def authenticate_user(self, username, password):

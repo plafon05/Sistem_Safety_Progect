@@ -47,23 +47,29 @@ class SecuritySystemApp:
 
         tk.Label(self.main_frame, text=f"Пользователь: {username} ({role})").pack(pady=5)
 
-        if role == "admin":
-            tk.Button(self.main_frame, text="Добавить пользователя", command=self.add_user).pack(pady=5)
-            tk.Button(self.main_frame, text="Удалить пользователя", command=self.delete_user).pack(pady=5)
-            tk.Button(self.main_frame, text="Изменить пороговые значения", command=self.change_thresholds).pack(pady=5)
+        match role:
+            case "personal manager":
+                tk.Button(self.main_frame, text="Удалить пользователя", command=self.delete_user).pack(pady=5)
+                tk.Button(self.main_frame, text="Добавить пользователя", command=self.add_user).pack(pady=5)
 
-        tk.Button(self.main_frame, text="Просмотреть значения датчиков", command=self.view_sensor_data).pack(pady=5)
+            case "admin":
+                tk.Button(self.main_frame, text="Изменить пороговые значения", command=self.change_thresholds).pack(pady=5)
+                tk.Button(self.main_frame, text="Просмотреть значения датчиков", command=self.view_sensor_data).pack(pady=5)
+                tk.Button(self.main_frame, text="Эмулировать показания датчиков", command=self.emulate_sensors).pack(pady=5)
+                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
 
-        tk.Button(self.main_frame, text="Эмулировать показания датчиков", command=self.emulate_sensors).pack(pady=5)
-        tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
+            case _:
+                tk.Button(self.main_frame, text="Просмотреть значения датчиков", command=self.view_sensor_data).pack(pady=5)
+                tk.Button(self.main_frame, text="Эмулировать показания датчиков", command=self.emulate_sensors).pack(pady=5)
+                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
 
     def add_user(self):
         """Добавление нового пользователя."""
         username = simpledialog.askstring("Добавить пользователя", "Введите имя пользователя:")
         if username:
             password = simpledialog.askstring("Добавить пользователя", "Введите пароль:")
-            role = simpledialog.askstring("Добавить пользователя", "Введите роль (admin или user):")
-            if role in ["admin", "user"]:
+            role = simpledialog.askstring("Добавить пользователя", "Введите роль:\nadmin \nuser \npersonal manager")
+            if role in ["admin", "user", "personal manager"]:
                 self.security_system.db.add_user(username, password, role)
                 messagebox.showinfo("Успех", f"Пользователь '{username}' добавлен как '{role}'.")
             else:
@@ -72,15 +78,16 @@ class SecuritySystemApp:
     def delete_user(self):
         """Удаление пользователя."""
         username = simpledialog.askstring("Удалить пользователя", "Введите имя пользователя для удаления:")
+        role = simpledialog.askstring("Удалить пользователя", "Введите роль (опционально):")
         if username:
-            self.security_system.db.delete_user(username)
-            messagebox.showinfo("Успех", f"Пользователь '{username}' удалён.")
+            self.security_system.db.delete_user(username, role)
+            messagebox.showinfo("Успех", f"Пользователь '{username}' с ролью '{role or 'все роли'}' удалён.")
 
     def change_thresholds(self):
         """Изменение пороговых значений датчиков."""
         thresholds = simpledialog.askstring(
             "Пороговые значения",
-            "Введите значения (temp_min, temp_max, humidity_min, humidity_max) через запятую:"
+            "Введите значения через запятую:\n1.минимальная температура\n2.максимальная температура\n3.минимальная влажность\n4.максимальная влажность"
         )
         if thresholds:
             try:

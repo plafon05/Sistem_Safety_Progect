@@ -15,18 +15,38 @@ class SecuritySystemApp:
 
     def create_login_interface(self):
         """Создание интерфейса авторизации."""
+        # Установка размеров и центровка окна
+        window_width = 500
+        window_height = 300
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        position_x = (screen_width // 2) - (window_width // 2)
+        position_y = (screen_height // 2) - (window_height // 2)
+        self.root.geometry(f"{window_width}x{window_height}+{position_x}+{position_y}")
+
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-        tk.Label(self.main_frame, text="Имя пользователя:").grid(row=0, column=0, pady=5)
-        self.username_entry = tk.Entry(self.main_frame)
-        self.username_entry.grid(row=0, column=1, pady=5)
+        # Увеличенные шрифты
+        label_font = ("Arial", 14)
+        entry_font = ("Arial", 12)
+        button_font = ("Arial", 14)
 
-        tk.Label(self.main_frame, text="Пароль:").grid(row=1, column=0, pady=5)
-        self.password_entry = tk.Entry(self.main_frame, show="*")
-        self.password_entry.grid(row=1, column=1, pady=5)
+        # Поле ввода имени пользователя
+        tk.Label(self.main_frame, text="Имя пользователя:", font=label_font).grid(row=0, column=0, pady=10, padx=10,
+                                                                                  sticky="w")
+        self.username_entry = tk.Entry(self.main_frame, font=entry_font, width=25)
+        self.username_entry.grid(row=0, column=1, pady=10, padx=10)
 
-        tk.Button(self.main_frame, text="Войти", command=self.authenticate_user).grid(row=2, columnspan=2, pady=10)
+        # Поле ввода пароля
+        tk.Label(self.main_frame, text="Пароль:", font=label_font).grid(row=1, column=0, pady=10, padx=10, sticky="w")
+        self.password_entry = tk.Entry(self.main_frame, show="*", font=entry_font, width=25)
+        self.password_entry.grid(row=1, column=1, pady=10, padx=10)
+
+        # Кнопка входа
+        tk.Button(
+            self.main_frame, text="Войти", font=button_font, width=20, command=self.authenticate_user
+        ).grid(row=2, columnspan=2, pady=20)
 
     def authenticate_user(self):
         """Аутентификация пользователя."""
@@ -42,27 +62,52 @@ class SecuritySystemApp:
 
     def show_dashboard(self, username, role):
         """Отображение панели управления."""
+        # Очистка текущих виджетов
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-        tk.Label(self.main_frame, text=f"Пользователь: {username} ({role})").pack(pady=5)
+        # Увеличенные шрифты
+        label_font = ("Arial", 16, "bold")
+        button_font = ("Arial", 14)
+
+        # Информация о пользователе
+        tk.Label(
+            self.main_frame,
+            text=f"Пользователь: {username} ({role})",
+            font=label_font
+        ).pack(pady=10)
+
+        # Создание кнопок в зависимости от роли пользователя
+        def create_button(text, command):
+            tk.Button(
+                self.main_frame,
+                text=text,
+                font=button_font,
+                width=30,  # Увеличенная ширина кнопки
+                height=1,  # Увеличенная высота кнопки
+                command=command
+            ).pack(pady=10)
 
         match role:
             case "personal manager":
-                tk.Button(self.main_frame, text="Удалить пользователя", command=self.delete_user).pack(pady=5)
-                tk.Button(self.main_frame, text="Добавить пользователя", command=self.add_user).pack(pady=5)
-                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
+                create_button("Удалить пользователя", self.delete_user)
+                create_button("Добавить пользователя", self.add_user)
+                create_button("Выйти", self.create_login_interface)
 
             case "admin":
-                tk.Button(self.main_frame, text="Изменить пороговые значения", command=self.change_thresholds).pack(pady=5)
-                tk.Button(self.main_frame, text="Просмотреть значения датчиков", command=self.view_sensor_data).pack(pady=5)
-                tk.Button(self.main_frame, text="Эмулировать показания датчиков", command=self.emulate_sensors).pack(pady=5)
-                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
+                create_button("Изменить пороговые значения", self.change_thresholds)
+                create_button("Просмотреть значения датчиков", self.view_sensor_data)
+                create_button("Эмулировать показания датчиков", self.emulate_sensors)
+                create_button("Выйти", self.create_login_interface)
 
             case _:
-                tk.Button(self.main_frame, text="Просмотреть значения датчиков", command=self.view_sensor_data).pack(pady=5)
-                tk.Button(self.main_frame, text="Эмулировать показания датчиков", command=self.emulate_sensors).pack(pady=5)
-                tk.Button(self.main_frame, text="Выйти", command=self.create_login_interface).pack(pady=10)
+                create_button("Просмотреть значения датчиков", self.view_sensor_data)
+                create_button("Эмулировать показания датчиков", self.emulate_sensors)
+                create_button("Выйти", self.create_login_interface)
+
+        # Автоматическая настройка размеров окна
+        self.root.update_idletasks()  # Обновление содержимого
+        self.root.geometry("")  # Окно автоматически подстраивается под содержимое
 
     def add_user(self):
         """Добавление нового пользователя."""
@@ -107,7 +152,8 @@ class SecuritySystemApp:
         if data:
             sensor_window = tk.Toplevel(self.root)
             sensor_window.title("Данные с датчиков")
-            sensor_window.geometry("800x600+200+200")  # Задание размеров и положения окна
+
+            sensor_window.geometry("800x350+200+200")  # Задание размеров и положения окна
 
             canvas = tk.Canvas(sensor_window)
             scrollbar_y = tk.Scrollbar(sensor_window, orient="vertical", command=canvas.yview)

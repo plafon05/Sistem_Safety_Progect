@@ -6,7 +6,7 @@ class SecuritySystemApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Система безопасности")
-        self.security_system = SecuritySystem()
+        self.security_system = SecuritySystem(self.root)
 
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack(padx=20, pady=20)

@@ -2,9 +2,11 @@ import sqlite3
 import random
 import time
 from datetime import datetime
+from tkinter import messagebox
+
 
 class SecuritySystem:
-    def __init__(self):
+    def __init__(self, root):
         self.db = Database()
         self.thresholds = {
             "temp_min": 18.0,
@@ -14,6 +16,7 @@ class SecuritySystem:
         }
         self.motion_sensor_active = False
         self.door_sensor_active = False
+        self.root = root  # Для графического интерфейса
 
     def check_for_anomalies(self, temp, humidity):
         anomalies = []
@@ -25,42 +28,36 @@ class SecuritySystem:
 
     def emulate_sensors(self):
         """Эмуляция показаний датчиков и их запись в БД."""
-        temp = random.uniform(15, 30)  # Генерация случайной температуры
-        humidity = random.uniform(20, 70)  # Генерация случайной влажности
-        motion_detected = random.choice([True, False])  # Датчик движения
-        door_opened = random.choice([True, False])  # Датчик открытия двери
+        temp = random.uniform(15, 30)
+        humidity = random.uniform(20, 70)
+        motion_detected = random.choice([True, False])
+        door_opened = random.choice([True, False])
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Запись данных в БД
         self.db.save_sensor_data(temp, humidity, motion_detected, door_opened, timestamp)
 
-        # Проверка на аномалии
         anomalies = self.check_for_anomalies(temp, humidity)
         if anomalies:
             self.notify_system_admin(anomalies)
 
-        # Проверка сигнализации
         if motion_detected and not self.is_working_hours():
             self.activate_alarm("Движение в нерабочее время")
         if door_opened:
             self.activate_alarm("Дверь сервера открыта без разрешения")
 
     def is_working_hours(self):
-        """Проверка рабочего времени: с 8 до 20 часов."""
         current_hour = datetime.now().hour
         return 8 <= current_hour <= 20
 
     def activate_alarm(self, reason):
-        print(f"СИГНАЛИЗАЦИЯ: {reason}")
         self.notify_security_admin(reason)
 
     def notify_system_admin(self, issues):
-        print("Уведомление системному администратору:")
-        for issue in issues:
-            print(f"- {issue}")
+        messagebox.showinfo("Уведомление системному администратору", "\n".join(issues))
 
     def notify_security_admin(self, message):
-        print(f"Уведомление администратору безопасности: {message}")
+        messagebox.showerror("Уведомление администратору безопасности", message)
+
 
 class Database:
     def __init__(self):

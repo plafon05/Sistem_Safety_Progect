@@ -117,9 +117,9 @@ class SecuritySystem:
         self.db = Database()
         self.thresholds = {
             "temp_min": 18.0,
-            "temp_max": 26.0,
+            "temp_max": 24.0,
             "humidity_min": 30.0,
-            "humidity_max": 60.0
+            "humidity_max": 50.0
         }
         self.motion_sensor_active = False
         self.door_sensor_active = False

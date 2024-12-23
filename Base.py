@@ -1,8 +1,115 @@
 import sqlite3
-import random
 import time
+import tkinter as tk
 from datetime import datetime
-from tkinter import messagebox
+import random
+
+class NotificationManager:
+    def __init__(self, root):
+        self.root = root
+        self.notifications = []
+        self.hide_all_button = None
+
+    def show_notification(self, message, recipient):
+        notification_window = tk.Toplevel(self.root)
+        notification_window.overrideredirect(True)
+        notification_window.attributes('-topmost', True)
+
+        notification_window.configure(bg="lightgray")
+
+        # Calculate position for the notification
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        notification_height = 80
+        notification_y = screen_height - (len(self.notifications) + 1) * (notification_height + 10)
+        notification_window.geometry(f"320x{notification_height}+{screen_width - 330}+{notification_y}")
+
+        # Add recipient label
+        recipient_label = tk.Label(notification_window, text=recipient, bg="red", font=("Arial",9, "bold"), anchor="w")
+        recipient_label.pack(fill="x", padx=5, pady=2)
+
+        # Add message label
+        message_label = tk.Label(notification_window, text=message, bg="lightgray", font=("Arial", 10), anchor="w", justify="left", wraplength=300)
+        message_label.pack(fill="x", padx=5, pady=5)
+
+        # Add close button
+        close_button = tk.Button(notification_window, text="x", command=lambda: self.close_notification(notification_window), bg="lightgray")
+        close_button.place(x=300, y=0, width=20, height=20)
+
+        self.notifications.append(notification_window)
+        self.animate_notification(notification_window)
+        self.update_positions()
+
+        # Show "Hide All" button if there are multiple notifications
+        if len(self.notifications) > 1 and not self.hide_all_button:
+            self.show_hide_all_button()
+
+    def animate_notification(self, notification_window):
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        target_y = int(notification_window.geometry().split('+')[2])
+
+        for step in range(screen_height, target_y, -10):
+            notification_window.geometry(f"320x80+{screen_width - 330}+{step}")
+            notification_window.update()
+            self.root.after(5)
+
+    def close_notification(self, notification_window):
+        notification_window.destroy()
+        self.notifications.remove(notification_window)
+        self.update_positions()
+
+        # Remove "Hide All" button if no notifications remain
+        if len(self.notifications) <= 1 and self.hide_all_button:
+            self.hide_all_button.destroy()
+            self.hide_all_button = None
+
+    def update_positions(self):
+        # Обновляем позиции уведомлений и кнопку "Скрыть все"
+        screen_height = self.root.winfo_screenheight()
+        notification_height = 80
+        for index, notification in enumerate(self.notifications):
+            notification_y = screen_height - (index + 1) * (notification_height + 10)
+            notification.geometry(f"320x{notification_height}+{self.root.winfo_screenwidth() - 330}+{notification_y}")
+
+        # Если нужно, отображаем кнопку "Скрыть все"
+        if len(self.notifications) > 1:
+            self.show_hide_all_button()
+        elif self.hide_all_button:
+            self.hide_all_button.place_forget()
+            self.hide_all_button = None
+
+    def show_hide_all_button(self):
+        if not self.hide_all_button:
+            # Создание кнопки, если она не существует
+            self.hide_all_button = tk.Button(
+                self.root,
+                text="Скрыть все",
+                command=self.hide_all,
+                bg="lightgray",
+                font=("Arial", 10)
+            )
+        # Позиционируем кнопку внизу экрана
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        self.hide_all_button.place(
+            x=screen_width - 330,
+            y=screen_height - 50,  # Немного выше нижнего края
+            width=100,  # Ширина кнопки
+            height=30  # Высота кнопки
+        )
+        self.hide_all_button.lift()  # Перемещаем кнопку поверх других элементов
+
+    def hide_all(self):
+        # Удаление всех уведомлений
+        for notification in self.notifications:
+            notification.destroy()
+        self.notifications.clear()
+
+        # Удаление кнопки
+        if self.hide_all_button:
+            self.hide_all_button.place_forget()
+            self.hide_all_button = None
 
 
 class SecuritySystem:
@@ -16,7 +123,8 @@ class SecuritySystem:
         }
         self.motion_sensor_active = False
         self.door_sensor_active = False
-        self.root = root  # Для графического интерфейса
+        self.root = root
+        self.notifications = NotificationManager(root)
 
     def check_for_anomalies(self, temp, humidity):
         anomalies = []
@@ -27,13 +135,12 @@ class SecuritySystem:
         return anomalies
 
     def emulate_sensors(self):
-        """Эмуляция показаний датчиков и их запись в БД."""
         temp = random.uniform(15, 30)
         humidity = random.uniform(20, 70)
         motion_detected = random.choice([True, False])
         door_opened = random.choice([True, False])
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.db.save_sensor_data(temp, humidity, motion_detected, door_opened, timestamp)
 
         anomalies = self.check_for_anomalies(temp, humidity)
@@ -42,6 +149,7 @@ class SecuritySystem:
 
         if motion_detected and not self.is_working_hours():
             self.activate_alarm("Движение в нерабочее время")
+
         if door_opened:
             self.activate_alarm("Дверь сервера открыта без разрешения")
 
@@ -53,10 +161,12 @@ class SecuritySystem:
         self.notify_security_admin(reason)
 
     def notify_system_admin(self, issues):
-        messagebox.showinfo("Уведомление системному администратору", "\n".join(issues))
+        for issue in issues:
+            self.notifications.show_notification(issue, "Уведомление системному администратору")
 
     def notify_security_admin(self, message):
-        messagebox.showerror("Уведомление администратору безопасности", message)
+        self.notifications.show_notification(message, "Уведомление администратору безопасности")
+
 
 
 class Database:
